@@ -1,3 +1,4 @@
-gradio
 joblib
-scikit-learn
+scikit-learn==1.6.1
+gradio
+xgboost==2.1.4
