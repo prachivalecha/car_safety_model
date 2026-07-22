@@ -2,8 +2,13 @@
 import math
 import joblib
 import gradio as gr
+import os
 
-MODEL_PATH = "car_safety_model.pkl"
+print("Current Directory:", os.getcwd())
+print("Files in Current Directory:", os.listdir())
+
+MODEL_PATH = os.path.join(os.getcwd(), "car_safety_model.pkl")
+print("Looking for model at:", MODEL_PATH)
 
 css = """
 /* ===== Premium Dark Theme ===== */
@@ -170,18 +175,32 @@ n_features = 0
 model_error = None
 
 try:
+    print("=" * 50)
+    print("Current Directory:", os.getcwd())
+    print("Files:", os.listdir())
+    print("Model Path:", MODEL_PATH)
+    print("Model Exists:", os.path.exists(MODEL_PATH))
+    print("=" * 50)
+
     model = joblib.load(MODEL_PATH)
+
+    print("✅ Model loaded successfully!")
+
     if hasattr(model, "feature_names_in_"):
         feature_names = list(model.feature_names_in_)
+
     if hasattr(model, "n_features_in_"):
         n_features = int(model.n_features_in_)
     elif feature_names:
         n_features = len(feature_names)
     else:
         raise ValueError("Unable to determine feature count.")
+
     if not feature_names:
         feature_names = [f"Feature {i+1}" for i in range(n_features)]
+
 except Exception as e:
+    print("MODEL LOADING ERROR:", repr(e))
     model_error = str(e)
 
 def predict(*vals):
