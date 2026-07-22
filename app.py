@@ -207,14 +207,15 @@ def predict(*vals):
     if model_error:
         return f"❌ Model Error\n\n{model_error}"
 
-try:
+    try:
 
-       buying_map = {
+        buying_map = {
             "Low": 0,
             "Medium": 1,
             "High": 2,
             "Very High": 3
-       }
+        }
+
         doors_map = {
             "2": 0,
             "3": 1,
@@ -239,7 +240,7 @@ try:
             "Medium": 1,
             "High": 2
         }
-
+        
         x = []
 
         for name, value in zip(feature_names, vals):
