@@ -206,36 +206,121 @@ except Exception as e:
 def predict(*vals):
     if model_error:
         return f"❌ Model Error\n\n{model_error}"
-    try:
-        x=[]
-        for v in vals:
-            if v is None:
+
+try:
+
+       buying_map = {
+            "Low": 0,
+            "Medium": 1,
+            "High": 2,
+            "Very High": 3
+       }
+        doors_map = {
+            "2": 0,
+            "3": 1,
+            "4": 2,
+            "5 or More": 3
+        }
+
+        persons_map = {
+            "2": 0,
+            "4": 1,
+            "More": 2
+        }
+
+        lug_map = {
+            "Small": 0,
+            "Medium": 1,
+            "Big": 2
+        }
+
+        safety_map = {
+            "Low": 0,
+            "Medium": 1,
+            "High": 2
+        }
+
+        x = []
+
+        for name, value in zip(feature_names, vals):
+
+            if value is None:
                 return "⚠️ Please fill all fields."
-            v=float(v)
-            if math.isnan(v) or math.isinf(v):
-                return "⚠️ Invalid numeric value."
-            x.append(v)
-        pred=model.predict([x])[0]
-        out=f"### Prediction\n**Result:** {pred}\n\n"
-        if hasattr(model,"predict_proba"):
+
+            key = name.lower()
+
+            if "buying" in key:
+                x.append(buying_map[value])
+
+            elif "maintenance" in key:
+                x.append(buying_map[value])
+
+            elif "door" in key:
+                x.append(doors_map[value])
+
+            elif "person" in key:
+                x.append(persons_map[value])
+
+            elif "lug" in key:
+                x.append(lug_map[value])
+
+            elif "safety" in key:
+                x.append(safety_map[value])
+
+            else:
+                x.append(float(value))
+
+        pred = model.predict([x])[0]
+
+        prediction_text = str(pred).lower()
+
+        if prediction_text in ["1", "acceptable", "good", "safe", "acc", "vgood"]:
+            out = f"""
+## ✅ Vehicle is Safe
+
+**Prediction:** {pred}
+
+This vehicle satisfies the safety conditions.
+"""
+        else:
+            out = f"""
+## ❌ Vehicle is Not Safe
+
+**Prediction:** {pred}
+
+This vehicle does not satisfy the safety conditions.
+"""
+
+        if hasattr(model, "predict_proba"):
             try:
-                p=model.predict_proba([x])[0]
-                conf=max(p)*100
-                out+=f"**Confidence:** {conf:.2f}%\n\n"
+                p = model.predict_proba([x])[0]
+                out += f"\n**Confidence:** {max(p)*100:.2f}%"
             except:
                 pass
-        safe=str(pred).lower() in ["1","safe","yes","true","acceptable","good"]
-        if safe:
-            out+="✅ **Vehicle appears to be safe based on the provided information.**"
-        else:
-            out+="⚠️ **Vehicle may not meet safety standards. Please review the input values.**"
+
         return out
-    except Exception:
-        return "❌ Unable to generate prediction. Please verify the entered values."
+
+    except Exception as e:
+        return f"❌ {e}"
+import random
 
 def example():
-    return [1.0]*n_features
 
+    examples = [
+
+        ["Low", "Low", "4", "More", "Big", "High"],
+
+        ["Medium", "Medium", "4", "4", "Medium", "Medium"],
+
+        ["High", "High", "3", "4", "Small", "Low"],
+
+        ["Very High", "Very High", "2", "2", "Small", "Low"],
+
+        ["Low", "Medium", "5 or More", "More", "Big", "High"]
+
+    ]
+
+    return random.choice(examples)
 with gr.Blocks(css=css, title="Car Safety Prediction System") as demo:
 
     gr.Markdown("""
@@ -258,20 +343,51 @@ Predict vehicle safety intelligently using Machine Learning
 
     with gr.Row(equal_height=True):
 
+        # ================= LEFT COLUMN =================
         with gr.Column(scale=2):
 
             gr.Markdown("## 🚘 Vehicle Information")
 
             inputs = []
 
+            feature_map = {
+    "buying": ["Low", "Medium", "High", "Very High"],
+    "maintenance": ["Low", "Medium", "High", "Very High"],
+    "maintenance cost": ["Low", "Medium", "High", "Very High"],
+    "doors": ["2", "3", "4", "5 or More"],
+    "number of doors": ["2", "3", "4", "5 or More"],
+    "persons": ["2", "4", "More"],
+    "number of persons": ["2", "4", "More"],
+    "lug_boot": ["Small", "Medium", "Big"],
+    "luggage boot": ["Small", "Medium", "Big"],
+    "safety": ["Low", "Medium", "High"]
+}
             for name in feature_names:
-                inputs.append(
-                    gr.Number(
-                        label=f"📌 {name}",
-                        placeholder=f"Enter {name}",
-                    )
-                )
 
+                key = name.lower()
+                choices = None
+
+                for k in feature_map:
+                    if k in key:
+                        choices = feature_map[k]
+                        break
+
+                if choices:
+                    inputs.append(
+                        gr.Dropdown(
+                            choices=choices,
+                            label=f"📌 {name}",
+                            interactive=True
+                        )
+                    )
+                else:
+                    inputs.append(
+                        gr.Number(
+                            label=f"📌 {name}"
+                        )
+                    )
+
+        # ================= RIGHT COLUMN =================
         with gr.Column(scale=1):
 
             gr.Markdown("## ⚡ Prediction")
@@ -298,6 +414,7 @@ Fill in all the details and click **🚀 Predict Safety**.
                 inputs + [out],
                 value="🧹 Clear"
             )
+
     btn.click(
         fn=predict,
         inputs=inputs,
