@@ -189,6 +189,8 @@ try:
     if hasattr(model, "feature_names_in_"):
         feature_names = list(model.feature_names_in_)
 
+    print("Feature Names:", feature_names)
+
     if hasattr(model, "n_features_in_"):
         n_features = int(model.n_features_in_)
     elif feature_names:
@@ -245,27 +247,45 @@ def predict(*vals):
 
         for name, value in zip(feature_names, vals):
 
-            if value is None:
+            if value is None or str(value).strip() == "":
                 return "⚠️ Please fill all fields."
 
             key = name.lower()
 
             if "buying" in key:
-                x.append(buying_map[value])
+                value = str(value).strip().title()
 
+                encoded = buying_map.get(value)
+                if encoded is None:
+                    return "⚠️ Invalid value for Buying. Please enter: Low, Medium, High, or Very High."
+
+                x.append(encoded)
             elif "maintenance" in key:
-                x.append(buying_map[value])
+                value = str(value).strip().title()
 
+                encoded = buying_map.get(value)
+                if encoded is None:
+                    return "⚠️ Invalid value for Maintenance. Please enter: Low, Medium, High, or Very High."
+
+                x.append(encoded)
             elif "door" in key:
+                value = str(value).strip()
+                if value == "5":
+                    value = "5 or More"
                 x.append(doors_map[value])
 
             elif "person" in key:
+                value = str(value).strip().title()
+                if value == "5":
+                    value = "More"
                 x.append(persons_map[value])
 
             elif "lug" in key:
+                value = str(value).strip().title()
                 x.append(lug_map[value])
 
             elif "safety" in key:
+                value = str(value).strip().title()
                 x.append(safety_map[value])
 
             else:
@@ -351,42 +371,32 @@ Predict vehicle safety intelligently using Machine Learning
 
             inputs = []
 
-            feature_map = {
-    "buying": ["Low", "Medium", "High", "Very High"],
-    "maintenance": ["Low", "Medium", "High", "Very High"],
-    "maintenance cost": ["Low", "Medium", "High", "Very High"],
-    "doors": ["2", "3", "4", "5 or More"],
-    "number of doors": ["2", "3", "4", "5 or More"],
-    "persons": ["2", "4", "More"],
-    "number of persons": ["2", "4", "More"],
-    "lug_boot": ["Small", "Medium", "Big"],
-    "luggage boot": ["Small", "Medium", "Big"],
-    "safety": ["Low", "Medium", "High"]
-}
+            info_map = {
+                "buying": "Enter: Low, Medium, High, or Very High",
+                "maintenance": "Enter: Low, Medium, High, or Very High",
+                "doors": "Enter: 2, 3, 4, or 5 or More",
+                "persons": "Enter: 2, 4, or More",
+                "lug": "Enter: Small, Medium, or Big",
+                "safety": "Enter: Low, Medium, or High"
+            }
+
             for name in feature_names:
 
                 key = name.lower()
-                choices = None
+                placeholder = "Enter value"
 
-                for k in feature_map:
+                for k, v in info_map.items():
                     if k in key:
-                        choices = feature_map[k]
+                        placeholder = v
                         break
 
-                if choices:
-                    inputs.append(
-                        gr.Dropdown(
-                            choices=choices,
-                            label=f"📌 {name}",
-                            interactive=True
-                        )
+                inputs.append(
+                    gr.Textbox(
+                        label=f"📌 {name}",
+                        placeholder=placeholder,
+                        info=placeholder
                     )
-                else:
-                    inputs.append(
-                        gr.Number(
-                            label=f"📌 {name}"
-                        )
-                    )
+                )
 
         # ================= RIGHT COLUMN =================
         with gr.Column(scale=1):
